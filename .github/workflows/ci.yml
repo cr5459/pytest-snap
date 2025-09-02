@@ -1,0 +1,29 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        py: ['3.9', '3.10', '3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev,test]
+      - name: Unit & Integration Tests
+        run: pytest -q
+      - name: Benchmark Smoke
+        run: |
+          python bench/bench_generate.py base.json -n 500 --seed 1
+          python bench/bench_generate.py curr.json -n 500 --seed 2 --slow-bias 1.2
+          python bench/bench_diff.py base.json curr.json --ratio 1.3 --abs 0.2

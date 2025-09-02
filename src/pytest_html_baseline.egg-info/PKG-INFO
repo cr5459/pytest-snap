@@ -1,3 +1,38 @@
+Metadata-Version: 2.4
+Name: pytest-html-baseline
+Version: 0.1.0
+Summary: Pytest plugin adding baseline comparison (failures, flaky, slowness) integrated with pytest-html and CI gating
+Author: pytest-html-baseline maintainers
+License: MIT
+Keywords: pytest,plugin,html,baseline,regression,ci
+Classifier: Framework :: Pytest
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Operating System :: OS Independent
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Testing
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: pytest>=7.0
+Provides-Extra: html
+Requires-Dist: pytest-html>=4.0; extra == "html"
+Provides-Extra: test
+Requires-Dist: pytest>=7.0; extra == "test"
+Requires-Dist: pytest-html>=4.0; extra == "test"
+Requires-Dist: hypothesis>=6.0; extra == "test"
+Provides-Extra: dev
+Requires-Dist: psutil>=5.9; extra == "dev"
+Requires-Dist: hypothesis>=6.0; extra == "dev"
+Requires-Dist: pytest-html>=4.0; extra == "dev"
+Requires-Dist: pytest>=7.0; extra == "dev"
+Dynamic: license-file
+
 # pytest-html-baseline
 
 Baseline comparison addon for pytest + pytest-html: detect new failures, vanished failures, flaky suspects, and performance regressions between test runs. Produces an HTML panel (when pytest-html is installed) and machine-readable JSON for CI gating.
@@ -66,14 +101,8 @@ jobs:
 ```
 
 ## Performance
-Target: 50k test diff < 250ms wall, < 25MB RSS.
-
-Measured locally (MacBook M-series, Python 3.13):
-```
-50k vs 50k tests diff: 41.8 ms wall, ~1.25 MB RSS delta
-Summary buckets example: {"n_new": 4404, "n_vanished": 4495, "n_flaky": 8899, "n_slower": 11222}
-```
-Bench scripts under `bench/` (CI runs a 500-test smoke check).
+Targets: 50k test diff < 250ms wall, < 25MB RSS.
+Bench scripts under bench/ (run in smoke mode in CI). Fill in real numbers after local run.
 
 ## Design Notes
 O(n) dict-based diff, minimal object churn, deterministic ordering in outputs for stability. Property-based tests validate invariants (partition, monotonicity, idempotence).
