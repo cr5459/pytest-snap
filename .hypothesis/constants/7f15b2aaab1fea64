@@ -1,0 +1,4 @@
+# file: /Users/cyrilrikh/Documents/GitHub/pytest-html-baseline/src/pytest_html_baseline/budgets.py
+# hypothesis_version: 6.138.14
+
+[0.0, 0.05, 0.95, 1.15, '.yaml', '.yml', 'budget_p95', 'budgets', 'id', 'observed_p95', 'p95', 'r', 'utf-8', 'yaml']

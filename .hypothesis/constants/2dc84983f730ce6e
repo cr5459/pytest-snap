@@ -1,0 +1,4 @@
+# file: /Users/cyrilrikh/Documents/GitHub/pytest-html-baseline/src/pytest_html_baseline/diff.py
+# hypothesis_version: 6.138.14
+
+[0.0, 1.0, 'abs_delta', 'budget_violations', 'curr', 'duration', 'failed', 'fixed_failures', 'flake_score', 'flaky_suspects', 'from', 'id', 'impact_score', 'n_budget', 'n_fixed', 'n_flaky', 'n_new', 'n_new_passes', 'n_new_xfails', 'n_removed', 'n_resolved_xfails', 'n_slower', 'n_vanished', 'new_failures', 'new_passes', 'new_xfails', 'outcome', 'passed', 'prev', 'ratio', 'removed_failures', 'resolved_xfails', 'sig', 'slower_tests', 'summary', 'tests', 'to', 'vanished_failures', 'xfail', 'xfailed', 'xpass', 'xpassed']

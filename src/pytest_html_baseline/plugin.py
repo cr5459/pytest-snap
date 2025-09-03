@@ -13,6 +13,7 @@ from .baseline import (
     append_history,
     load_history,
     compute_flake_scores,
+    normalize_test_id,
 )
 from .diff import diff_snapshots
 from .config import BaselineConfig
@@ -68,6 +69,21 @@ def pytest_addoption(parser):  # pragma: no cover - exercised via integration
         dest="html_budgets",
         help="YAML/JSON file containing performance budgets",
     )
+    group.addoption(
+        "--html-history-path",
+        action="store",
+        dest="html_history_path",
+        help="Path for rolling history jsonl (set to 'off' to disable). Defaults to .artifacts/history.jsonl",
+        default=None,
+    )
+    group.addoption(
+        "--html-history-max",
+        action="store",
+        dest="html_history_max",
+        type=int,
+        help="Maximum retained history lines (default 20)",
+        default=None,
+    )
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -100,7 +116,10 @@ def pytest_runtest_makereport(item, call):  # pragma: no cover - integration
     out = rep.outcome
     longrepr = rep.longrepr if out == "failed" else None
     sig = failure_signature(longrepr)
-    rec = TestRecord(id=item.nodeid, outcome=out, duration=duration, sig=sig)
+    cfg = getattr(config, "_html_baseline_cfg", None)
+    norm_mode = getattr(cfg, "normalization_mode", "off") if cfg else "off"
+    norm_id = normalize_test_id(item.nodeid, norm_mode)
+    rec = TestRecord(id=norm_id, outcome=out, duration=duration, sig=sig)
     config._html_baseline_records.append(rec)  # type: ignore[attr-defined]
 
 
@@ -135,13 +154,16 @@ def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - integration
                 print(f"[pytest-html-baseline] Failed to write snapshot to {save_path}")
 
     # Append to history for flake score computation
-    history_path = getattr(config.option, "html_history_path", "history.jsonl")
-    try:
-        append_history(history_path, run_id=current.get("created_at", ""), records=records)
-    except Exception:
-        pass
-    history = load_history(history_path)
-    flake_scores = compute_flake_scores(history)
+    cfg = getattr(config, "_html_baseline_cfg", None)
+    flake_scores = {}
+    if cfg and cfg.history_path:
+        history_path = cfg.history_path
+        try:
+            append_history(history_path, run_id=current.get("created_at", ""), records=records, max_lines=cfg.history_max)
+        except Exception:
+            pass
+        history = load_history(history_path)
+        flake_scores = compute_flake_scores(history)
 
     if baseline:
         cfg = getattr(config, "_html_baseline_cfg")
@@ -177,9 +199,12 @@ def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - integration
             # Always print a concise console summary to aid discoverability
             summ = diff["summary"]
             print(
-                "[pytest-html-baseline] new={n_new} vanished={n_vanished} flaky={n_flaky} slower={n_slower}".format(
-                    **summ
-                )
+                (
+                    "[pytest-html-baseline] new_failures={n_new} new_passes={n_new_passes} "
+                    "new_xfails={n_new_xfails} resolved_xfails={n_resolved_xfails} "
+                    "fixed={n_fixed} removed={n_removed} vanished(agg)={n_vanished} "
+                    "flaky={n_flaky} slower={n_slower}"
+                ).format(**summ)
             )
             if getattr(config.option, "html_baseline_verbose", False):
                 # Show first few examples for debugging

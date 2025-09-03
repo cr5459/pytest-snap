@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Iterable, List, Dict, Any, Optional
 from pathlib import Path
+import re
 
 from .fingerprint import fingerprint
 
@@ -20,6 +21,16 @@ def failure_signature(longrepr) -> Optional[str]:
     except Exception:
         return None
     return fingerprint(first)
+
+# --- ID Normalization -----------------------------------------------------
+_VERSION_DIR_RE = re.compile(r"(/|^)v[0-9]+(/)tests/")
+
+def normalize_test_id(raw_id: str, mode: str | None = None) -> str:
+    if not mode or mode in {"off", "none"}:
+        return raw_id
+    if mode == "strip_version_dir":
+        return _VERSION_DIR_RE.sub(lambda m: m.group(1) + "__/tests/", raw_id)
+    return raw_id
 
 
 @dataclass
@@ -74,7 +85,7 @@ def read_snapshot(path: str) -> dict:
 HISTORY_MAX = 20
 
 
-def append_history(history_path: str, run_id: str, records: List[TestRecord]) -> None:
+def append_history(history_path: str, run_id: str, records: List[TestRecord], max_lines: int | None = None) -> None:
     entry = {
         "run_id": run_id,
         "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -86,11 +97,12 @@ def append_history(history_path: str, run_id: str, records: List[TestRecord]) ->
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("a", encoding="utf-8") as f:
         f.write(json.dumps(entry, separators=(",", ":")) + "\n")
-    # Truncate to last HISTORY_MAX lines
+    # Truncate to last HISTORY_MAX (or override) lines
     try:
         lines = p.read_text(encoding="utf-8").splitlines()
-        if len(lines) > HISTORY_MAX:
-            p.write_text("\n".join(lines[-HISTORY_MAX:]) + "\n", encoding="utf-8")
+        limit = HISTORY_MAX if max_lines is None else max_lines
+        if len(lines) > limit:
+            p.write_text("\n".join(lines[-limit:]) + "\n", encoding="utf-8")
     except Exception:
         pass
 

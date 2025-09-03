@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from .diff import diff_snapshots  # noqa: F401  # (may be used later)
 
 
@@ -32,7 +33,8 @@ def render_baseline_section(report, diff: dict):  # pragma: no cover - simple fo
     report.append(panel)
 
 
-def pytest_html_results_summary(prefix, summary, postfix):  # pragma: no cover - integration
+@pytest.hookimpl(tryfirst=True)  # pragma: no cover - integration
+def pytest_html_results_summary(prefix, summary, postfix, session):  # pragma: no cover - integration
     # Called by pytest-html if installed
     config = getattr(summary, "config", None) or getattr(prefix, "config", None)
     if not config:
@@ -55,6 +57,7 @@ def pytest_html_results_summary(prefix, summary, postfix):  # pragma: no cover -
         pass
 
 
+@pytest.hookimpl(tryfirst=True)  # pragma: no cover - integration
 def pytest_html_results_table_row(report, cells):  # pragma: no cover - integration
     # Add inline badges next to test node id cell if enabled
     config = getattr(report, "config", None)
@@ -69,6 +72,22 @@ def pytest_html_results_table_row(report, cells):  # pragma: no cover - integrat
         from py.xml import html  # type: ignore
     except Exception:
         return
+
+
+@pytest.hookimpl(tryfirst=True)  # pragma: no cover - integration
+def pytest_html_report_header(config):
+    # Always provide a single-line summary so users see status even if main panel fails
+    diff = getattr(config, "_html_baseline_diff", None)
+    if not diff:
+        return ["Baseline Compare: (no diff – supply --html-baseline)"]
+    s = diff.get("summary", {})
+    return [
+        (
+            f"Baseline Compare: new={s.get('n_new',0)} "
+            f"vanished={s.get('n_vanished',0)} flaky={s.get('n_flaky',0)} "
+            f"slower={s.get('n_slower',0)} budgets={s.get('n_budget',0)}"
+        )
+    ]
     nodeid = getattr(report, "nodeid", None)
     if not nodeid:
         return

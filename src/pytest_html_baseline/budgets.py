@@ -5,7 +5,8 @@ from statistics import quantiles
 from typing import Dict, List, Tuple
 
 try:  # pragma: no cover
-    import yaml
+    import importlib
+    yaml = importlib.import_module("yaml")  # type: ignore
 except Exception:  # pragma: no cover
     yaml = None
 

@@ -1,1 +1,0 @@
-{"new_failures":[],"vanished_failures":[],"flaky_suspects":[],"slower_tests":[],"budget_violations":[{"id":"example_suite/v3/tests/test_perf.py::test_already_slow","budget_p95":0.18,"observed_p95":0.255284}],"summary":{"n_new":0,"n_vanished":0,"n_flaky":0,"n_slower":0,"n_budget":1},"impact_score":2}
