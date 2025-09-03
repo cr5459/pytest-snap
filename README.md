@@ -40,9 +40,8 @@ pytest-snap show v2
 pytest-snap clean
 ```
 
-Snapshots live in `.artifacts/` as `snap_<label>.json`. Add `--html` to `run`/`all` to also emit a pytest-html report (if `pytest-html` is installed). The CLI is unchanged by the flag rename.
+Snapshots live in `.artifacts/` as `snap_<label>.json`. Add `--html` to `run`/`all` to also emit a pytest-html report (if `pytest-html` is installed). The CLI is unchanged by the flag rename. More on the --perf flag in advanced features section.
 
-To learn more about the --perf flag (performance flag), see that section.
 ---
 
 ## Tracked Change Categories
