@@ -201,6 +201,14 @@ def main(a: str, b: str, *, plain: bool = False, show_all: bool = False, full_id
             else:
                 print(pal.c('YELLOW', "  (no increases at all)"))
 
+    # Derive persistent xfails and xpassed transitions
+    persistent_xfails = []
+    xpassed = []
+    for tid in set(ia) & set(ib):
+        if ia[tid].get('outcome') in {'xfailed','xfail'} and ib[tid].get('outcome') in {'xfailed','xfail'}:
+            persistent_xfails.append(tid)
+        if ia[tid].get('outcome') not in {'xpassed','xpass'} and ib[tid].get('outcome') in {'xpassed','xpass'}:
+            xpassed.append(tid)
     metrics = [
         ("new_pass", len(added_pass)),
         ("new_fail", len(added_fail)),
@@ -209,6 +217,8 @@ def main(a: str, b: str, *, plain: bool = False, show_all: bool = False, full_id
         ("removed", len(removed)),
         ("new_xfails", len(new_xfails)),
         ("resolved_xfails", len(resolved_xfails)),
+        ("persistent_xfails", len(persistent_xfails)),
+        ("xpassed", len(xpassed)),
         ("persistent_fail", len(persistent_fail)),
         ("persistent_pass", len(persistent_pass)),
     ]
@@ -217,16 +227,16 @@ def main(a: str, b: str, *, plain: bool = False, show_all: bool = False, full_id
     metrics.append(("total_changed", total_changed))
 
     width = max(len(k) for k,_ in metrics)
-    def colorize(name: str, val: int) -> str:
-        if val == 0:
-            return str(val)
-        if name in {"new_fail", "regressions"}:
-            return pal.c('RED', str(val))
-        if name in {"fixes", "new_pass", "resolved_xfails"}:
-            return pal.c('GREEN', str(val))
-        if name in {"new_xfails", "persistent_fail", "slower"}:
-            return pal.c('YELLOW', str(val))
-        return pal.c('CYAN', str(val))
+    def colorize(metric_name: str, metric_val: int) -> str:
+        if metric_val == 0:
+            return str(metric_val)
+        if metric_name in {"new_fail", "regressions"}:
+            return pal.c('RED', str(metric_val))
+        if metric_name in {"fixes", "new_pass", "resolved_xfails", "xpassed"}:
+            return pal.c('GREEN', str(metric_val))
+        if metric_name in {"new_xfails", "persistent_fail", "persistent_xfails", "slower"}:
+            return pal.c('YELLOW', str(metric_val))
+        return pal.c('CYAN', str(metric_val))
 
     print(pal.c('BOLD', 'Summary Metrics:'))
     for k,v in metrics:

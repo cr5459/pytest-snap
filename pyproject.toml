@@ -49,12 +49,23 @@ dev = [
 [project.entry-points.pytest11]
 html_baseline = "pytest_html_baseline.plugin"
 
+[project.scripts]
+pytest-html-baseline = "pytest_html_baseline.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
-testpaths = ["tests"]
+# Ignore example version directories so their duplicate test module names do not
+# collide during normal root test runs (the quick.sh script invokes the unified
+# suite under example_suite/tests explicitly). These directories are retained
+# only for code diff demonstrations.
+norecursedirs = [
+	"example_suite/v1",
+	"example_suite/v2",
+	"example_suite/v3",
+]
 
 [tool.coverage.run]
 source = ["pytest_html_baseline"]

@@ -113,7 +113,17 @@ def pytest_runtest_makereport(item, call):  # pragma: no cover - integration
         return
     config = item.config
     duration = getattr(rep, "duration", 0.0)
-    out = rep.outcome
+    # Normalize xfail/xpass outcomes so diff logic can classify explicitly.
+    if hasattr(rep, "wasxfail"):
+        # Pytest may report xfail internal outcome as 'failed' or 'skipped' depending on version/strictness.
+        if rep.outcome in {"failed", "skipped"}:
+            out = "xfailed"
+        elif rep.outcome == "passed":
+            out = "xpassed"
+        else:
+            out = rep.outcome
+    else:
+        out = rep.outcome
     longrepr = rep.longrepr if out == "failed" else None
     sig = failure_signature(longrepr)
     cfg = getattr(config, "_html_baseline_cfg", None)
@@ -201,8 +211,8 @@ def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - integration
             print(
                 (
                     "[pytest-html-baseline] new_failures={n_new} new_passes={n_new_passes} "
-                    "new_xfails={n_new_xfails} resolved_xfails={n_resolved_xfails} "
-                    "fixed={n_fixed} removed={n_removed} vanished(agg)={n_vanished} "
+                    "new_xfails={n_new_xfails} resolved_xfails={n_resolved_xfails} persistent_xfails={n_persistent_xfails} "
+                    "xpassed={n_xpassed} fixed={n_fixed} removed={n_removed} vanished(agg)={n_vanished} "
                     "flaky={n_flaky} slower={n_slower}"
                 ).format(**summ)
             )

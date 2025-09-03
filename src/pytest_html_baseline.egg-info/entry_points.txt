@@ -1,2 +1,5 @@
+[console_scripts]
+pytest-html-baseline = pytest_html_baseline.cli:main
+
 [pytest11]
 html_baseline = pytest_html_baseline.plugin

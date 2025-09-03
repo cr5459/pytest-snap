@@ -30,6 +30,8 @@ def diff_snapshots(
     removed_failures = []   # previously failed test id no longer present
     new_xfails = []         # tests newly in an xfail state
     resolved_xfails = []    # tests that were xfail and now pass
+    persistent_xfails = []  # still xfailed
+    xpassed = []            # unexpected passes under xfail mark
     flaky_suspects = []
     slower_tests = []
     budget_violations = budgets or []
@@ -54,9 +56,14 @@ def diff_snapshots(
         # Newly xfailed (baseline not xfail-like, current is xfail)
         if cout in {"xfailed", "xfail"} and bout not in {"xfailed", "xfail"}:
             new_xfails.append({"id": cid, "from": bout, "to": cout})
-        # Resolved xfail (baseline xfail and now passing)
-        if bout in {"xfailed", "xfail"} and cout == "passed":
+        # Resolved xfail (baseline xfail and now passing or xpassed)
+        if bout in {"xfailed", "xfail"} and cout in {"passed", "xpassed"}:
             resolved_xfails.append({"id": cid, "from": bout, "to": cout})
+        # Persistent xfail
+        if bout in {"xfailed", "xfail"} and cout in {"xfailed", "xfail"}:
+            persistent_xfails.append({"id": cid})
+        if cout == "xpassed":
+            xpassed.append({"id": cid, "from": bout, "to": cout})
         # Flaky suspect: toggled outcome pass/fail states (include xfail/xpass changes)
         if (bout != cout) and {bout, cout} & {"failed", "passed", "xfailed", "xpassed", "xfail", "xpass"}:
             fs = flake_scores.get(cid, 0.0) if flake_scores else 0.0
@@ -108,6 +115,8 @@ def diff_snapshots(
         "n_removed": len(removed_failures),
         "n_new_xfails": len(new_xfails),
         "n_resolved_xfails": len(resolved_xfails),
+        "n_persistent_xfails": len(persistent_xfails),
+        "n_xpassed": len(xpassed),
         "n_flaky": len(flaky_suspects),
         "n_slower": len(slower_tests_f),
         "n_budget": len(budget_violations_f),
@@ -120,8 +129,10 @@ def diff_snapshots(
         "vanished_failures": vanished_failures[:50],  # union of fixed + removed
         "fixed_failures": fixed_failures[:50],
         "removed_failures": removed_failures[:50],
-        "new_xfails": new_xfails[:50],
-        "resolved_xfails": resolved_xfails[:50],
+    "new_xfails": new_xfails[:50],
+    "resolved_xfails": resolved_xfails[:50],
+    "persistent_xfails": persistent_xfails[:50],
+    "xpassed": xpassed[:50],
         "flaky_suspects": flaky_suspects[:50],
         "slower_tests": slower_tests_f[:50],
         "budget_violations": budget_violations_f[:50],

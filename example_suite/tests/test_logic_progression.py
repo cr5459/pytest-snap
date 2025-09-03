@@ -1,5 +1,6 @@
 import random
 import time
+import pytest
 
 """Unified logic tests representing evolution formerly spread across v1/v2/v3.
 
@@ -22,6 +23,7 @@ def test_initial_failure():
     # Currently fixed; to simulate original failing baseline change 2 -> 3.
     assert add(1, 1) == 2
 
+@pytest.mark.xfail(reason="Intentional regression example (kept failing for diff demos)")
 def test_new_failure():
     # Intentional regression (persisting)
     assert add(10, 5) == 100

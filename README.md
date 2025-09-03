@@ -18,6 +18,41 @@ pip install pytest-html-baseline
 pip install pytest-html pytest-html-baseline
 ```
 
+### Optional Convenience CLI
+Installing the package now also provides a `pytest-html-baseline` console script that mirrors the developer convenience found in `example_suite/quick.sh` but works in any project.
+
+Examples:
+```
+# Run tests and capture snapshot labeled v1 (creates .artifacts/ by default)
+pytest-html-baseline run v1
+
+# Make changes, then run again
+pytest-html-baseline run v2
+
+# See behavioral diff (regressions, fixes, slower tests, etc.)
+pytest-html-baseline diff v1 v2 --perf
+
+# Include code-level diff if you keep versioned dirs (v1/, v2/)
+pytest-html-baseline diff v1 v2 --code
+
+# Only code diff
+pytest-html-baseline code-diff v1 v2
+
+# Run a sequence
+pytest-html-baseline all v1 v2 v3
+
+# List existing snapshots
+pytest-html-baseline list
+```
+
+Flags (selected):
+```
+diff: --plain --full-ids --all --perf --perf-ratio R --perf-abs S --perf-show-faster \
+	--code --code-only --versions-base DIR
+run/all: --tests DIR --artifacts DIR --no-html --no-history (plus extra pytest args after --)
+```
+The CLI shells out to `pytest` adding the appropriate plugin flags; gating still occurs within pytest itself.
+
 ---
 
 ## Day-to-day workflow (copy & paste ready)

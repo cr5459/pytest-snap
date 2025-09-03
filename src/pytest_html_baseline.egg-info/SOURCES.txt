@@ -3,8 +3,11 @@ README.md
 pyproject.toml
 src/pytest_html_baseline/__init__.py
 src/pytest_html_baseline/baseline.py
+src/pytest_html_baseline/budgets.py
+src/pytest_html_baseline/cli.py
 src/pytest_html_baseline/config.py
 src/pytest_html_baseline/diff.py
+src/pytest_html_baseline/fingerprint.py
 src/pytest_html_baseline/plugin.py
 src/pytest_html_baseline/render.py
 src/pytest_html_baseline.egg-info/PKG-INFO
@@ -13,6 +16,3 @@ src/pytest_html_baseline.egg-info/dependency_links.txt
 src/pytest_html_baseline.egg-info/entry_points.txt
 src/pytest_html_baseline.egg-info/requires.txt
 src/pytest_html_baseline.egg-info/top_level.txt
-tests/test_diff_unit.py
-tests/test_plugin_integration.py
-tests/test_property_invariants.py
