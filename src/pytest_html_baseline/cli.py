@@ -327,9 +327,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog='pytest-snap',
         description=(
-            'High-level workflow helper for pytest-snap. See README.md for full usage & examples. '
-            "Performance flags: run 'pytest-snap diff --help' or 'pytest-snap perf'."
+            'High-level workflow helper for pytest-snap. See README.md for full usage & examples. '\
+            "Source changes: use 'pytest-snap diff <A> <B> --code' (auto-detects version dirs). "\
+            "Performance: see 'pytest-snap diff --help' or 'pytest-snap perf'."
         ),
+        epilog=(
+            "Examples:\n"
+            "  pytest-snap run v1\n"
+            "  pytest-snap run v2\n"
+            "  pytest-snap diff v1 v2 --code        # add code-level test function diff\n"
+            "  pytest-snap diff v1 v2 --perf        # add slower test analysis\n"
+            "  pytest-snap diff v1 v2 --code --perf # combine both analyses\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     sub = ap.add_subparsers(dest='cmd', required=True)
 

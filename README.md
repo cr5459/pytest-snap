@@ -87,6 +87,51 @@ Legacy form (still accepted): `--html-baseline ... --html-budgets ... --html-fai
 
 ---
 
+### Code-level Diff (`--code`)
+
+In addition to outcome & timing changes you can compare the test function source between two labeled versions.
+
+Typical layout:
+```
+project/
+	v1/tests/...
+	v2/tests/...
+```
+
+Run a snapshot diff including code changes:
+```bash
+pytest-snap diff v1 v2 --code
+```
+
+What happens:
+* Auto-detects version directories in the current working directory (or under `example_suite/` fallback).
+* Lists added / removed / modified test functions (`def test_*`).
+* Shows a unified diff (syntax-colored) for modified tests with simple performance hints (range() growth, added sleep time).
+
+Options:
+* `--code`        Combine snapshot diff + code diff.
+* `--code-only`   Suppress snapshot outcome section; only show code diff.
+* `--versions-base DIR`   Look for version subdirectories under `DIR` instead of `.`.
+
+Examples:
+```bash
+# Just code changes (no outcome buckets)
+pytest-snap diff v1 v2 --code-only --code
+
+# Custom versions base path
+pytest-snap diff release_old release_new --code --versions-base ./releases
+
+# Code + performance analysis together
+pytest-snap diff v1 v2 --code --perf
+```
+
+Limitations:
+* Only inspects top-level `test_*.py` files; helper modules not diffed.
+* Function-level granularity (class-based tests appear as functions with node ids).
+* Large diffs are truncated after 20 modified tests (increase by editing source if needed).
+
+---
+
 ### Performance Diff (`--perf`) in the CLI
 
 The CLI snapshot diff (`pytest-snap diff A B`) ignores timing changes unless you opt in:
