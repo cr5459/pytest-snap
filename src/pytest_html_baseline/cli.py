@@ -330,7 +330,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap_run.add_argument('label')
     ap_run.add_argument('--tests', help='Tests directory (default: auto)')
     ap_run.add_argument('--artifacts', default='.artifacts', help='Artifacts directory (default: .artifacts)')
-    ap_run.add_argument('--no-html', action='store_true', help='Disable HTML report generation')
+    ap_run.add_argument('--html', action='store_true', help='Generate pytest-html report (opt-in)')
     ap_run.add_argument('--no-history', action='store_true', help='Disable flake history recording')
     ap_run.add_argument('pytest_args', nargs=argparse.REMAINDER, help='Extra pytest args after --')
 
@@ -338,7 +338,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap_all.add_argument('labels', nargs='*')
     ap_all.add_argument('--tests')
     ap_all.add_argument('--artifacts', default='.artifacts')
-    ap_all.add_argument('--no-html', action='store_true')
+    ap_all.add_argument('--html', action='store_true', help='Generate pytest-html reports for each run')
     ap_all.add_argument('--no-history', action='store_true')
     ap_all.add_argument('pytest_args', nargs=argparse.REMAINDER)
 
@@ -380,11 +380,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     if args.cmd == 'run':
-        tests_dir = discover_tests_dir(args.tests)
+        tests_dir = discover_tests_dir(getattr(args, 'tests', None))
         if not tests_dir.exists():
             print(f"Tests directory not found: {tests_dir}", file=sys.stderr)
             return 2
-        return run_tests(args.label, tests_dir=tests_dir, artifacts=Path(args.artifacts), html=not args.no_html, history=not args.no_history, extra_pytest=args.pytest_args)
+        return run_tests(args.label, tests_dir=tests_dir, artifacts=Path(args.artifacts), html=args.html, history=not args.no_history, extra_pytest=args.pytest_args)
 
     if args.cmd == 'all':
         labels = args.labels or ['v1','v2','v3']
@@ -393,7 +393,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"Tests directory not found: {tests_dir}", file=sys.stderr); return 2
         rc = 0
         for lbl in labels:
-            r = run_tests(lbl, tests_dir=tests_dir, artifacts=Path(args.artifacts), html=not args.no_html, history=not args.no_history, extra_pytest=args.pytest_args)
+            r = run_tests(lbl, tests_dir=tests_dir, artifacts=Path(args.artifacts), html=args.html, history=not args.no_history, extra_pytest=args.pytest_args)
             rc = r or rc
         return rc
 
