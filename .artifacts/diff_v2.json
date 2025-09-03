@@ -1,0 +1,1 @@
+{"new_failures":[{"id":"example_suite/v2/tests/test_logic.py::test_new_failure","outcome":"failed"}],"vanished_failures":[{"id":"example_suite/v1/tests/test_logic.py::test_initial_failure","sig":"8b8e20da9c73"}],"flaky_suspects":[],"slower_tests":[],"budget_violations":[],"summary":{"n_new":1,"n_vanished":1,"n_flaky":0,"n_slower":0,"n_budget":0},"impact_score":3}

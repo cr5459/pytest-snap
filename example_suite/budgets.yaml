@@ -1,0 +1,3 @@
+budgets:
+  example_suite/v3/tests/test_perf.py::test_fast_enough: { p95: 0.05 }
+  example_suite/v3/tests/test_perf.py::test_already_slow: { p95: 0.18 }

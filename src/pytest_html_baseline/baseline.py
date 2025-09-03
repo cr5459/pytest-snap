@@ -1,29 +1,25 @@
 from __future__ import annotations
 
 import json
-import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Iterable, List, Dict, Any
+from typing import Iterable, List, Dict, Any, Optional
+from pathlib import Path
+
+from .fingerprint import fingerprint
 
 
 SNAPSHOT_VERSION = 1
 
 
-def failure_signature(longrepr) -> str | None:
+def failure_signature(longrepr) -> Optional[str]:
     if not longrepr:
         return None
     try:
-        first = str(longrepr).splitlines()[0].strip()
+        first = str(longrepr).splitlines()[0]
     except Exception:
         return None
-    if not first:
-        return None
-    # Truncate long line for stability before hashing
-    if len(first) > 500:
-        first = first[:500]
-    h = hashlib.sha1(first.encode("utf-8"))
-    return h.hexdigest()[:12]
+    return fingerprint(first)
 
 
 @dataclass
@@ -71,3 +67,64 @@ def read_snapshot(path: str) -> dict:
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
     return data
+
+
+# --- Rolling history ---
+
+HISTORY_MAX = 20
+
+
+def append_history(history_path: str, run_id: str, records: List[TestRecord]) -> None:
+    entry = {
+        "run_id": run_id,
+        "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "tests": [
+            {"id": r.id, "outcome": r.outcome, "duration": round(float(r.duration), 6)} for r in records
+        ],
+    }
+    p = Path(history_path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with p.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, separators=(",", ":")) + "\n")
+    # Truncate to last HISTORY_MAX lines
+    try:
+        lines = p.read_text(encoding="utf-8").splitlines()
+        if len(lines) > HISTORY_MAX:
+            p.write_text("\n".join(lines[-HISTORY_MAX:]) + "\n", encoding="utf-8")
+    except Exception:
+        pass
+
+
+def load_history(history_path: str) -> List[dict]:
+    p = Path(history_path)
+    if not p.exists():
+        return []
+    out = []
+    try:
+        for line in p.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            out.append(json.loads(line))
+    except Exception:
+        return []
+    return out
+
+
+def compute_flake_scores(history: List[dict]) -> Dict[str, float]:
+    # Exponential weighted measure of outcome flips (pass<->fail) across sequential runs
+    # Use alpha = 0.3
+    alpha = 0.3
+    last_outcome: Dict[str, str] = {}
+    score: Dict[str, float] = {}
+    for run in history:
+        tests = run.get("tests", [])
+        # build quick map
+        curr = {t["id"]: t.get("outcome") for t in tests}
+        for tid, out in curr.items():
+            prev = last_outcome.get(tid)
+            flipped = prev is not None and prev != out and {prev, out} <= {"passed", "failed"}
+            prev_score = score.get(tid, 0.0)
+            new_score = (1 - alpha) * prev_score + (alpha if flipped else 0.0)
+            score[tid] = new_score
+            last_outcome[tid] = out
+    return score
