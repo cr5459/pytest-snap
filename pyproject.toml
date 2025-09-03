@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
-	{ name = "pytest-html-baseline maintainers" }
+	{ name = "pytest-snap maintainers" }
 ]
 keywords = ["pytest", "plugin", "snapshot", "baseline", "regression", "performance", "ci"]
 classifiers = [
@@ -47,10 +47,10 @@ dev = [
 ]
 
 [project.entry-points.pytest11]
-snap = "pytest_html_baseline.plugin"
+snap = "pytest_snap.plugin"
 
 [project.scripts]
-pytest-snap = "pytest_html_baseline.cli:main"
+pytest-snap = "pytest_snap.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -68,7 +68,7 @@ norecursedirs = [
 ]
 
 [tool.coverage.run]
-source = ["pytest_html_baseline"]
+source = ["pytest_snap"]
 
 [tool.ruff]
 line-length = 100

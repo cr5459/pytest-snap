@@ -1,250 +1,202 @@
-# pytest-html-baseline
+# pytest-snap
 
-Baseline comparison addon for pytest + optional pytest-html: detect new failures, vanished failures, flaky suspects, performance regressions, and performance budget violations between test runs. Produces an HTML panel (when pytest-html is installed) and machine-readable JSON for CI gating and automation.
+A lightweight way to record the results of a test run (a snapshot) and later compare new runs against that baseline. It highlights regressions (new failures), fixes, removed tests, performance slow‑downs, flaky behavior, and optional performance budget breaches.
 
-## Features
-- Capture a snapshot (baseline) of test outcomes & durations (plus failure fingerprints).
-- O(n) diff of subsequent runs: new failures, vanished failures, flaky suspects, slower tests (ratio + abs), budget violations.
-- Flake score computation from rolling history (jsonl) with threshold-based de-emphasis.
-- Performance budgets (p95 target per test) via YAML/JSON file; dual guard (ratio + absolute) to reduce noise.
-- JSON diff output + HTML panel + optional per-row badges.
-- CI failure gating on selectable regression types (`--html-fail-on`).
-- Stable deterministic output ordering; property-based invariant tests.
+The project provides:
 
-## Install
-```
-pip install pytest-html-baseline
-# HTML panel & row badge integration (requires pytest-html):
-pip install pytest-html pytest-html-baseline
-```
+1. A pytest plugin (auto‑loaded once installed).  
+2. A helper CLI (`pytest-snap`) for labeled runs and offline diffs.
 
-### Optional Convenience CLI
-Installing the package now also provides a `pytest-html-baseline` console script that mirrors the developer convenience found in `example_suite/quick.sh` but works in any project.
-
-Examples:
-```
-# Run tests and capture snapshot labeled v1 (creates .artifacts/ by default)
-pytest-html-baseline run v1
-
-# Make changes, then run again
-pytest-html-baseline run v2
-
-# See behavioral diff (regressions, fixes, slower tests, etc.)
-pytest-html-baseline diff v1 v2 --perf
-
-# Include code-level diff if you keep versioned dirs (v1/, v2/)
-pytest-html-baseline diff v1 v2 --code
-
-# Only code diff
-pytest-html-baseline code-diff v1 v2
-
-# Run a sequence
-pytest-html-baseline all v1 v2 v3
-
-# List existing snapshots
-pytest-html-baseline list
-```
-
-Flags (selected):
-```
-diff: --plain --full-ids --all --perf --perf-ratio R --perf-abs S --perf-show-faster \
-	--code --code-only --versions-base DIR
-run/all: --tests DIR --artifacts DIR --no-html --no-history (plus extra pytest args after --)
-```
-The CLI shells out to `pytest` adding the appropriate plugin flags; gating still occurs within pytest itself.
+Use either one or both— they are complementary but independent.
 
 ---
 
-## Day-to-day workflow (copy & paste ready)
+## Installation
 
-### 0) Install (once)
+```bash
+pip install pytest-snap
 ```
-pip install pytest-html pytest-html-baseline
+---
+
+## Helper CLI (`pytest-snap`)
+
+Labeled runs make comparisons simple (e.g. `v1`, `v2`).
+
+```bash
+# Run default sequence (v1 v2 v3)
+pytest-snap all
+
+# Or run individual labels
+pytest-snap run v1
+pytest-snap run v2
+
+# Compare two snapshots (v1 -> v2) with performance analysis
+pytest-snap diff v1 v2 --perf
+
+# Show a single snapshot summary
+pytest-snap show v2
+
+# Remove generated artifacts
+pytest-snap clean
 ```
 
-### 1) First run: create a baseline
-Pick a folder for artifacts (e.g. `.artifacts/`).
-```
-pytest \
-	--html=report_run1.html --self-contained-html \
-	--html-save-baseline .artifacts/pytest_baseline.json
-```
-Outputs:
-- `report_run1.html` – normal pytest-html report (if installed).
-- `.artifacts/pytest_baseline.json` – compact snapshot (id, outcome, duration, fingerprint).
+Snapshots live in `.artifacts/` as `snap_<label>.json`. Add `--html` to `run`/`all` to also emit a pytest-html report (if `pytest-html` is installed). The CLI is unchanged by the flag rename.
 
-### 2) Day-to-day runs: compare to baseline (auto-triage)
-```
-pytest \
-	--html=report_run2.html --self-contained-html \
-	--html-baseline .artifacts/pytest_baseline.json \
-	--html-save-baseline .artifacts/pytest_baseline.json \
-	--html-diff-json .artifacts/pytest_diff.json \
-	--html-fail-on new-failures \
-	--html-slower-threshold-ratio 1.30 \
-	--html-slower-threshold-abs 0.20
-```
-What happens automatically:
-- Current run diffed vs baseline in O(n).
-- Buckets: New Failures, Vanished Failures, Flaky Suspects, Slower Tests.
-- Injects a "Baseline Compare" panel into the HTML report.
-- Writes machine-readable diff JSON (`pytest_diff.json`).
-- Fails build if there are non-flaky new failures (`--html-fail-on new-failures`).
+To learn more about the --perf flag (performance flag), see that section.
+---
 
-Reading results:
-- Open `report_run2.html` → Baseline Compare.
-- New Failures: exactly what broke today (with fingerprint snippet).
-- Slower Tests: which slowed and by how much (+Δms & ratio).
-- Vanished Failures: what got fixed (useful for changelogs).
-- Headless: parse `.artifacts/pytest_diff.json` in a bot/PR comment.
+## Tracked Change Categories
 
-### 3) In CI (GitHub Actions example)
+| Category | Description |
+|----------|-------------|
+| New failures | Tests that now fail but did not previously |
+| Fixed failures | Tests that failed before and now pass |
+| Vanished failures | Former failing tests that are now gone or fixed |
+| Slower tests | Same test now significantly slower |
+| Flaky suspects | Tests whose outcome flips between runs |
+| New / resolved / persistent xfails | Expected-failure state transitions |
+| XPASS | Tests marked xfail that unexpectedly passed |
+| Budget violations | Defined performance budget exceeded |
+
+---
+## Advanced Features
+
+The following sections dive into optional and more advanced capabilities: performance budgets and gating, performance diff analysis, flaky detection heuristics, and baseline workflow refinements. Skip ahead only if you need tighter CI controls or deeper performance insight.
+
+## Performance Budgets
+
+Define timing expectations for groups of tests using a YAML file. Example `budgets.yaml`:
+
 ```yaml
-name: tests
-on: [push, pull_request]
-jobs:
-	test:
-		runs-on: ubuntu-latest
-		steps:
-			- uses: actions/checkout@v4
-			- uses: actions/setup-python@v5
-				with: { python-version: "3.11" }
-			- run: pip install -U pip pytest pytest-html pytest-html-baseline
-			- run: mkdir -p .artifacts
-			- name: Run tests with baseline compare
-				run: |
-					pytest \
-						--html=report.html --self-contained-html \
-						--html-baseline .artifacts/pytest_baseline.json \
-						--html-save-baseline .artifacts/pytest_baseline.json \
-						--html-diff-json .artifacts/pytest_diff.json \
-						--html-fail-on new-failures \
-						--html-slower-threshold-ratio 1.30 \
-						--html-slower-threshold-abs 0.20
-			- uses: actions/upload-artifact@v4
-				with:
-					name: test-artifacts
-					path: |
-						report.html
-						.artifacts/pytest_baseline.json
-						.artifacts/pytest_diff.json
+groups:
+  core:
+	 match: "tests/"   # substring match in test id
+	 p95: 0.50         # 95th percentile < 0.50s
+  slow_group:
+	 match: "tests/slow_"
+	 max_avg: 1.2      # mean duration < 1.2s
 ```
+
+Use it:
+```bash
+pytest --snap-baseline .artifacts/snap_base.json \
+	--snap-budgets budgets.yaml \
+	--snap-fail-on budgets
+```
+Legacy form (still accepted): `--html-baseline ... --html-budgets ... --html-fail-on budgets`.
+
+---
+
+### Performance Diff (`--perf`) in the CLI
+
+The CLI snapshot diff (`pytest-snap diff A B`) ignores timing changes unless you opt in:
+
+```bash
+pytest-snap diff v1 v2 --perf
+```
+
+This adds a "Slower Tests" section listing tests whose elapsed time increased beyond BOTH thresholds:
+
+* ratio: new_duration / old_duration >= `--perf-ratio` (default 1.30 ⇒ at least 30% slower)
+* absolute: new_duration - old_duration >= `--perf-abs` (default 0.05s)
+
+Optional flags:
+
+| Flag | Meaning |
+|------|---------|
+| `--perf-ratio 1.5` | Require 50%+ slow-down (instead of 30%) |
+| `--perf-abs 0.02` | Require at least 20ms added latency |
+| `--perf-show-faster` | Also list significantly faster tests |
+
+To see only timings + code changes (skip outcome buckets):
+```bash
+pytest-snap diff v1 v2 --perf --code --code-only
+```
+
+### Performance Gating During Test Runs
+
+Inside pytest runs (plugin), slower tests are tracked when you supply a baseline and choose a fail mode:
+
+```bash
+pytest --snap-baseline .artifacts/snap_base.json \
+	--snap-fail-on slower \
+	--snap-slower-threshold-ratio 1.25 \
+	--snap-slower-threshold-abs 0.10
+```
+
 Behavior:
-- Green: no new (non-flaky) failures & no slowdowns beyond thresholds.
-- Red: exit 1 with concise console summary. Open `report.html` → Baseline Compare for detail.
 
-### 4) Make it really effective (tune noise)
-Threshold tuning examples:
-```
---html-slower-threshold-ratio 1.50   # only flag ≥50% slower
---html-slower-threshold-abs 0.50      # require +500ms absolute increase
-```
-Fail modes:
-```
---html-fail-on new-failures | slower | budgets | any
-```
-Flake handling:
-```
---html-flake-threshold 0.10   # stricter (treat fewer as flaky)
---html-flake-threshold 0.30   # more forgiving
-```
-Performance budgets (optional powerful add-on): create `tests/.perf_budgets.yaml`:
-```yaml
-budgets:
-	tests/payments/test_checkout.py::test_payment: { p95: 0.80 }
-```
-Run with:
-```
-pytest ... --html-budgets tests/.perf_budgets.yaml --html-fail-on budgets
-```
-CI fails if observed p95 exceeds budget by ≥15% AND ≥50ms absolute (dual guard).
+* A test is considered slower if it exceeds both the ratio and absolute thresholds.
+* `--snap-fail-on slower` turns any slower test into a non‑zero exit (CI gating).
+* Adjust thresholds to tune sensitivity (raise ratio or abs to reduce noise).
 
-### 5) Typical workflows
-A) Local dev (quick sanity):
-```
-pytest -q \
-	--html-baseline .artifacts/pytest_baseline.json \
-	--html-save-baseline .artifacts/pytest_baseline.json
-```
-B) Pre-merge speed focus:
-```
-pytest -q \
-	--html-baseline .artifacts/pytest_baseline.json \
-	--html-save-baseline .artifacts/pytest_baseline.json \
-	--html-fail-on slower \
-	--html-slower-threshold-ratio 1.25 \
-	--html-slower-threshold-abs 0.10
-```
-C) Release guardrails (budgets):
-```
-pytest -q \
-	--html-baseline .artifacts/pytest_baseline.json \
-	--html-budgets tests/.perf_budgets.yaml \
-	--html-fail-on budgets
-```
+Shortcut mental model: ratio filters relative regressions; absolute filters micro‑noise. Both must pass so a 2ms blip on a 1µs test won't alert even if ratio is large.
 
-### 6) Team adoption tips
-- Pin a baseline on `main` after a stable run.
-- Store artifacts (baseline, optional history jsonl) under `.artifacts/`.
-- Surface results: upload `report.html` & diff JSON or post summary via bot.
-- Start conservative (higher thresholds) → build trust → tighten gradually.
-
-### 7) Troubleshooting
-Problem | Adjustment
---- | ---
-Slowdown seems tiny | Increase `--html-slower-threshold-abs` (e.g. 0.30–0.50)
-Flaky tests causing failures | Raise `--html-flake-threshold` or use `--html-fail-on new-failures`
-Not using pytest-html | Omit `--html=...`; JSON diff + exit gating still work
-Too many slow warnings | Raise ratio or abs threshold (or both)
-Need stricter gating | Use `--html-fail-on any`
+If you only care about functional changes, omit perf flags; if you want early perf regression visibility, add them.
 
 ---
 
-## CLI Options
---html-save-baseline PATH : write snapshot after run
---html-baseline PATH       : load snapshot to diff
---html-diff-json PATH      : write diff JSON
---html-slower-threshold-ratio FLOAT (default 1.30 / env HTML_SLOWER_RATIO)
---html-slower-threshold-abs FLOAT seconds (default 0.20 / env HTML_SLOWER_ABS)
---html-min-count INT (default 0 / env HTML_MIN_COUNT)
---html-flake-threshold FLOAT (default 0.15 / env HTML_FLAKE_THRESHOLD)
---html-budgets PATH        : YAML/JSON performance budgets file
---html-fail-on {new-failures,slower,budgets,any} (default new-failures / env HTML_FAIL_ON)
---html-baseline-badges     : annotate pytest-html rows with badges
---html-baseline-verbose    : print example IDs for debugging
+## Flaky Detection
 
-## JSON Snapshot Format
-Single object: `version`, `created_at`, `collected`, `tests` (array of `{id,outcome,duration,sig}`). Failure fingerprint (`sig`) is a stable hash of the first normalized failure line.
+When history logging is enabled (default in `pytest-snap run`), previous outcomes are tracked. A weighted score measures pass ↔ fail flips. Highly flaky tests can be excluded from "new failures" to reduce noise.
 
-## Diff JSON Structure (abridged)
+---
+
+## Conceptual Model
+
+1. Capture a baseline snapshot.  
+2. Compare new runs to that baseline.  
+3. Choose gating rules.  
+4. Refresh the baseline when the current state is the new normal.  
+
+---
+
+## FAQ
+
+**Do I need the CLI?** No. The plugin alone works; the CLI adds convenience for labeled runs and offline diffs.
+
+**When do I refresh the baseline?** After intentional changes when remaining differences are acceptable.
+
+**What about flaky tests?** Fix them ideally; meanwhile history-based filtering reduces false alarms.
+
+**Is this a snapshot testing library for function outputs?** No. It snapshots test outcomes and timings.
+
+**Does it speed up tests?** No—it surfaces regressions sooner.
+
+
 ```
-{
-	"new_failures": [{"id":...,"sig":...,"flake_score":...}],
-	"vanished_failures": [...],
-	"slower_tests": [{"id":...,"ratio":1.42,"abs_delta":0.231}],
-	"budget_violations": [{"id":...,"budget_p95":0.8,"observed_p95":0.97}],
-	"summary": {"n_new":1,"n_vanished":0,"n_flaky":0,"n_slower":2,"n_budget":1,"impact_score":6}
-}
-```
 
-## Performance
-Target: Diff 50k test pairs < 250ms wall, < 25MB RSS. Previous measurement (MacBook M-series, Python 3.13):
-```
-50k vs 50k tests diff: 41.8 ms wall, ~1.25 MB RSS delta
-Summary example: {"n_new": 4404, "n_vanished": 4495, "n_flaky": 8899, "n_slower": 11222}
-```
-Benchmark helpers under `bench/` (CI runs a smaller smoke benchmark).
+---
 
-## Design Notes
-- Dict index O(n) diff; no quadratic joins.
-- Deterministic ordering for reproducibility.
-- Property tests cover partition / monotonicity / idempotence.
-- Flake scores: exponentially weighted from recent history (default threshold 0.15) to suppress noisy offenders.
-- Dual-threshold slowness (ratio + absolute) to cut false positives.
-- Impact score heuristic (weights new > budget > slower) for quick sorting.
+## Glossary
 
-## Example Synthetic Suite
-See `example_suite/` for a three-iteration toy project (`v1` -> `v2` -> `v3`) plus a `demo_run.sh` script showing baseline creation, regression introduction, and budget violation detection with produced HTML & JSON artifacts.
+| Term | Definition |
+|------|------------|
+| Snapshot | JSON record of one full test run |
+| Baseline | The snapshot future runs are compared against |
+| Diff | Structured comparison of baseline vs current run |
+| Flaky test | Test with unstable pass/fail result across runs |
+| Budget | Performance rule (e.g. max average or p95) |
+
+---
+
+## Contributing
+
+1. Fork / clone.  
+2. (Optional) Create venv & install: `pip install -e .[dev]`.  
+3. Add or adjust tests for your changes.  
+4. Keep documentation clear and concise.  
+5. Open a PR.
+
+---
 
 ## License
-MIT
+
+MIT (see `LICENSE`).
+
+---
+
+Happy hacking.
+
+---
+

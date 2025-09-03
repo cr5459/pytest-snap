@@ -1,2 +1,2 @@
-"""pytest-snap plugin package (formerly pytest-html-baseline)."""
+"""pytest-snap plugin package."""
 from .plugin import *  # noqa: F401,F403

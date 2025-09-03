@@ -1,0 +1,2 @@
+pytest_html_baseline
+pytest_snap

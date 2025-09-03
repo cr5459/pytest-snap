@@ -215,6 +215,7 @@ def diff_snapshots(a_path: Path, b_path: Path, *, plain=False, show_all=False, f
 # ---------- Code Version Diff (adapted) ----------
 
 def code_version_diff(old: Path, new: Path, *, limit: int = 20, no_color: bool = False) -> int:
+    # Note: standalone 'code-diff' subcommand removed; invoked via 'diff --code'.
     import ast, difflib, re, textwrap
     ANSI={'red':'\x1b[31m','green':'\x1b[32m','yellow':'\x1b[33m','magenta':'\x1b[35m','cyan':'\x1b[36m','bold':'\x1b[1m','dim':'\x1b[2m','reset':'\x1b[0m'}
     def C(color: str, txt: str):
@@ -323,7 +324,13 @@ def discover_tests_dir(explicit: str | None) -> Path:
 
 def main(argv: Sequence[str] | None = None) -> int:
     argv = list(argv or sys.argv[1:])
-    ap = argparse.ArgumentParser(prog='pytest-snap', description='High-level workflow helper for pytest-snap')
+    ap = argparse.ArgumentParser(
+        prog='pytest-snap',
+        description=(
+            'High-level workflow helper for pytest-snap. See README.md for full usage & examples. '
+            "Performance flags: run 'pytest-snap diff --help' or 'pytest-snap perf'."
+        ),
+    )
     sub = ap.add_subparsers(dest='cmd', required=True)
 
     ap_run = sub.add_parser('run', help='Run tests and write labeled snapshot')
@@ -342,7 +349,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap_all.add_argument('--no-history', action='store_true')
     ap_all.add_argument('pytest_args', nargs=argparse.REMAINDER)
 
-    ap_diff = sub.add_parser('diff', help='Diff two labeled snapshots (a -> b)')
+    ap_diff = sub.add_parser('diff', help='Diff two labeled snapshots (a -> b); add --code for source, --perf for timing')
+    ap_perf = sub.add_parser('perf', help='Show performance diff usage (shortcut docs for diff --perf)')
     ap_diff.add_argument('a'); ap_diff.add_argument('b')
     ap_diff.add_argument('--artifacts', default='.artifacts')
     ap_diff.add_argument('--plain', action='store_true')
@@ -355,11 +363,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap_diff.add_argument('--code', action='store_true', help='Also show code-level diff if version dirs exist')
     ap_diff.add_argument('--code-only', action='store_true', help='Only show code-level diff')
     ap_diff.add_argument('--versions-base', default='.', help='Base directory containing version subdirs (default .)')
-
-    ap_code = sub.add_parser('code-diff', help='Direct code diff between two version directories')
-    ap_code.add_argument('old'); ap_code.add_argument('new')
-    ap_code.add_argument('--limit', type=int, default=20)
-    ap_code.add_argument('--no-color', action='store_true')
 
     ap_list = sub.add_parser('list', help='List available snapshots')
     ap_list.add_argument('--artifacts', default='.artifacts')
@@ -409,15 +412,35 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.code or args.code_only:
             base = Path(args.versions_base)
             old_dir = base / args.a; new_dir = base / args.b
+            if not (old_dir.is_dir() and new_dir.is_dir()):
+                # Auto-detect common alternate base (example_suite) if user ran from repo root
+                alt_base = Path('example_suite')
+                alt_old, alt_new = alt_base / args.a, alt_base / args.b
+                if alt_old.is_dir() and alt_new.is_dir():
+                    base = alt_base
+                    old_dir, new_dir = alt_old, alt_new
             if old_dir.is_dir() and new_dir.is_dir():
                 print("\n== CODE DIFF ==")
+                print(f"(using versions base: {base})")
                 code_version_diff(old_dir, new_dir)
             else:
-                print(f"(code diff skipped: missing {old_dir} or {new_dir})", file=sys.stderr)
+                print(f"(code diff skipped: missing {old_dir} or {new_dir}; specify --versions-base <dir>)", file=sys.stderr)
         return 0
 
-    if args.cmd == 'code-diff':
-        return code_version_diff(Path(args.old), Path(args.new), limit=args.limit, no_color=args.no_color)
+    if args.cmd == 'perf':
+        # Provide concise docs for performance flags
+        print("Performance Diff Usage:\n")
+        print("  pytest-snap diff <A> <B> --perf [--perf-ratio R] [--perf-abs S] [--perf-show-faster]\n")
+        print("Flags:")
+        print("  --perf               Enable slower test detection output")
+        print("  --perf-ratio R       Require at least Rx slowdown (default 1.30)")
+        print("  --perf-abs S         Require at least S seconds added (default 0.05)")
+        print("  --perf-show-faster   Also list significantly faster tests")
+        print("\nA test is reported as slower only if BOTH thresholds are exceeded.")
+        print("For gating during runs use: --snap-fail-on slower --snap-slower-threshold-ratio ...")
+        print("See README.md Performance sections for deeper explanation.")
+        return 0
+
 
     if args.cmd == 'list':
         art = Path(args.artifacts)
