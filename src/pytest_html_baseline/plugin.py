@@ -161,7 +161,7 @@ def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - integration
             write_snapshot(save_path, records, collected)
         except Exception:
             if getattr(config.option, "html_baseline_verbose", False):
-                print(f"[pytest-html-baseline] Failed to write snapshot to {save_path}")
+                print(f"[pytest-snap] Failed to write snapshot to {save_path}")
 
     # Append to history for flake score computation
     cfg = getattr(config, "_html_baseline_cfg", None)
@@ -210,7 +210,7 @@ def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - integration
             summ = diff["summary"]
             print(
                 (
-                    "[pytest-html-baseline] new_failures={n_new} new_passes={n_new_passes} "
+                    "[pytest-snap] new_failures={n_new} new_passes={n_new_passes} "
                     "new_xfails={n_new_xfails} resolved_xfails={n_resolved_xfails} persistent_xfails={n_persistent_xfails} "
                     "xpassed={n_xpassed} fixed={n_fixed} removed={n_removed} vanished(agg)={n_vanished} "
                     "flaky={n_flaky} slower={n_slower}"
@@ -222,7 +222,7 @@ def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - integration
                     return ", ".join(r.get("id", "?") for r in lst[:n]) or "-"
 
                 print(
-                    "[pytest-html-baseline] examples: "
+                    "[pytest-snap] examples: "
                     f"new:[{head(diff['new_failures'])}] vanished:[{head(diff['vanished_failures'])}] "
                     f"slower:[{head(diff['slower_tests'])}]"
                 )

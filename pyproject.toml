@@ -3,16 +3,16 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pytest-html-baseline"
+name = "pytest-snap"
 version = "0.1.0"
-description = "Pytest plugin adding baseline comparison (failures, flaky, slowness, budgets) integrated with pytest-html and CI gating"
+description = "Pytest plugin for snapshotting test outcomes & performance with rich diffs (failures, xfail transitions, flakiness, performance)"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
 	{ name = "pytest-html-baseline maintainers" }
 ]
-keywords = ["pytest", "plugin", "html", "baseline", "regression", "ci"]
+keywords = ["pytest", "plugin", "snapshot", "baseline", "regression", "performance", "ci"]
 classifiers = [
 	"Framework :: Pytest",
 	"License :: OSI Approved :: MIT License",
@@ -47,10 +47,10 @@ dev = [
 ]
 
 [project.entry-points.pytest11]
-html_baseline = "pytest_html_baseline.plugin"
+snap = "pytest_html_baseline.plugin"
 
 [project.scripts]
-pytest-html-baseline = "pytest_html_baseline.cli:main"
+pytest-snap = "pytest_html_baseline.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

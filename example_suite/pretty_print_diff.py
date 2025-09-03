@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Pretty-print a pytest-html-baseline diff JSON (e.g. diff_v2.json).
+"""Pretty-print a pytest-snap diff JSON (e.g. diff_v2.json).
 
 Usage examples:
 

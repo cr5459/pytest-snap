@@ -1,9 +1,9 @@
-"""Command line utility providing a portable version of the `example_suite/quick.sh` workflow.
+"""Command line utility for pytest-snap (snapshot + diff workflow; portable version of the original quick.sh).
 
 Install (after package install):
-  pytest-html-baseline run v1
-  pytest-html-baseline run v2
-  pytest-html-baseline diff v1 v2 --perf
+    pytest-snap run v1
+    pytest-snap run v2
+    pytest-snap diff v1 v2 --perf
 
 Key concepts:
   * Each `run <label>` executes pytest and writes a snapshot JSON (snap_<label>.json)
@@ -323,7 +323,7 @@ def discover_tests_dir(explicit: str | None) -> Path:
 
 def main(argv: Sequence[str] | None = None) -> int:
     argv = list(argv or sys.argv[1:])
-    ap = argparse.ArgumentParser(prog='pytest-html-baseline', description='High-level workflow helper for pytest-html-baseline')
+    ap = argparse.ArgumentParser(prog='pytest-snap', description='High-level workflow helper for pytest-snap')
     sub = ap.add_subparsers(dest='cmd', required=True)
 
     ap_run = sub.add_parser('run', help='Run tests and write labeled snapshot')
