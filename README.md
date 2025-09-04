@@ -180,6 +180,65 @@ If you only care about functional changes, omit perf flags; if you want early pe
 
 ---
 
+### Timeline / Historical Progression (`timeline` subcommand)
+
+Use the timeline view to see how snapshots evolved over time and when failures first appeared.
+
+Create snapshots (labels arbitrary):
+```bash
+pytest-snap run v1
+pytest-snap run v2
+pytest-snap run v3
+```
+
+Show chronological summary:
+```bash
+pytest-snap timeline
+```
+Sample output:
+```
+TIMELINE (3 snapshots)
+2025-09-04T19:20:21Z v1 commit=8e05100 total=28 fail=0 new_fail=0 fixes=0 regressions=0
+2025-09-04T19:25:07Z v2 commit=8e05100 total=28 fail=1 new_fail=1 fixes=0 regressions=1
+2025-09-04T19:30:44Z v3 commit=8e05100 total=28 fail=1 new_fail=0 fixes=1 regressions=0
+```
+
+Flags:
+| Flag | Purpose |
+|------|---------|
+| `--since <commit>` | Start listing from first snapshot whose `git_commit` matches (short hash) |
+| `--limit N` | Show only the last N snapshots after filtering |
+| `--json` | Emit machine-readable JSON array |
+| `--artifacts DIR` | Use alternate artifacts directory |
+
+Computed per row (vs previous snapshot):
+* `new_fail`: tests that newly failed.
+* `fixes`: previously failing tests that now pass.
+* `regressions`: passed → failed transitions.
+
+Metadata:
+* Each snapshot is enriched (best effort) with `git_commit` (short HEAD hash) after write.
+* If git metadata isn’t available (outside a repo), the commit shows as `unknown` or `None`.
+
+JSON example:
+```bash
+pytest-snap timeline --json | jq .
+```
+Produces entries like:
+```json
+[
+	{"label":"v1","git_commit":"8e05100","total":28,"failed":0,"passed":28,"xfailed":0,"xpassed":0,"new_fail":0,"fixes":0,"regressions":0},
+	{"label":"v2","git_commit":"8e05100","total":28,"failed":1,"passed":27,"xfailed":0,"xpassed":0,"new_fail":1,"fixes":0,"regressions":1}
+]
+```
+
+Use cases:
+* Quickly pinpoint when a regression first appeared before diving into full diff.
+* Send the timeline JSON straight to a small dashboard (Prometheus push, simple web chart) without re-reading all snapshot files.
+* In Continuous Integration (CI) pipelines, fail the run (block the merge) if the timeline shows new failures or regressions. CI = automated test/build system that runs on every change.
+
+---
+
 ## Flaky Detection
 
 When history logging is enabled (default in `pytest-snap run`), previous outcomes are tracked. A weighted score measures pass ↔ fail flips. Highly flaky tests can be excluded from "new failures" to reduce noise.

@@ -172,10 +172,26 @@ def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - integration
 	baseline_path = getattr(config.option, "html_baseline", None)
 	baseline = _load_snapshot(baseline_path)
 	current = {"version": 1, "created_at": "", "collected": collected, "tests": [r.to_json() for r in records]}
+	git_sha = None
+	try:
+		import subprocess
+		git_sha = subprocess.check_output(["git","rev-parse","--short","HEAD"], text=True).strip()
+	except Exception:
+		git_sha = None
 	save_path = getattr(config.option, "html_save_baseline", None)
 	if save_path:
 		try:
 			write_snapshot(save_path, records, collected)
+			# Post-write enrich (append git commit) for quick availability
+			if git_sha:
+				try:
+					import json as _json
+					with open(save_path, 'r+', encoding='utf-8') as f:
+						data=_json.load(f)
+						data['git_commit']=git_sha
+						f.seek(0); f.truncate(); _json.dump(data,f,separators=(',',':'))
+				except Exception:
+					pass
 		except Exception:
 			if getattr(config.option, "html_baseline_verbose", False):
 				print(f"[pytest-snap] Failed to write snapshot to {save_path}")

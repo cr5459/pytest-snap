@@ -24,6 +24,7 @@ import os
 import shutil
 import subprocess
 import sys
+import datetime
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Sequence
@@ -361,6 +362,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     ap_diff = sub.add_parser('diff', help='Diff two labeled snapshots (a -> b); add --code for source, --perf for timing')
     ap_perf = sub.add_parser('perf', help='Show performance diff usage (shortcut docs for diff --perf)')
+    ap_timeline = sub.add_parser('timeline', help='Show chronological snapshot summary (optionally since a commit)')
+    ap_timeline.add_argument('--artifacts', default='.artifacts')
+    ap_timeline.add_argument('--since', help='Git commit hash (short) to start from')
+    ap_timeline.add_argument('--limit', type=int, default=0, help='Max snapshots to display (0 = all)')
+    ap_timeline.add_argument('--json', action='store_true', help='Emit machine-readable JSON array')
     ap_diff.add_argument('a'); ap_diff.add_argument('b')
     ap_diff.add_argument('--artifacts', default='.artifacts')
     ap_diff.add_argument('--plain', action='store_true')
@@ -449,6 +455,81 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("\nA test is reported as slower only if BOTH thresholds are exceeded.")
         print("For gating during runs use: --snap-fail-on slower --snap-slower-threshold-ratio ...")
         print("See README.md Performance sections for deeper explanation.")
+        return 0
+
+    if args.cmd == 'timeline':
+        art = Path(args.artifacts)
+        if not art.exists():
+            print('(no artifacts directory)'); return 0
+        snaps = sorted(art.glob('snap_*.json'))
+        if not snaps:
+            print('(no snapshots found)'); return 0
+        records = []
+        def load(p: Path):
+            try:
+                return json.load(p.open('r', encoding='utf-8'))
+            except Exception:
+                return None
+        for p in snaps:
+            data = load(p)
+            if not data: continue
+            created = data.get('created_at') or ''
+            commit = data.get('git_commit', 'unknown')
+            tests = data.get('tests', [])
+            outcomes = {t.get('id'): t.get('outcome') for t in tests}
+            counts = {
+                'total': len(tests),
+                'failed': sum(1 for o in outcomes.values() if o == 'failed'),
+                'passed': sum(1 for o in outcomes.values() if o == 'passed'),
+                'xfailed': sum(1 for o in outcomes.values() if o in {'xfailed','xfail'}),
+                'xpassed': sum(1 for o in outcomes.values() if o in {'xpassed','xpass'}),
+            }
+            label = p.stem.replace('snap_','',1)
+            records.append({'file': p.name, 'label': label, 'created_at': created, 'git_commit': commit, **counts, 'outcomes': outcomes})
+        # Sort by timestamp if present else file mtime
+        def parse_ts(s: str):
+            try:
+                return datetime.datetime.strptime(s, '%Y-%m-%dT%H:%M:%SZ')
+            except Exception:
+                return datetime.datetime.fromtimestamp(0)
+        records.sort(key=lambda r: (parse_ts(r['created_at']), r['label']))
+        start_idx = 0
+        if args.since:
+            for i,r in enumerate(records):
+                if r.get('git_commit') == args.since:
+                    start_idx = i
+                    break
+            else:
+                print(f"(commit {args.since} not found; showing all)")
+        view = records[start_idx:]
+        # Compute deltas vs previous
+        timeline = []
+        prev = None
+        for r in view:
+            outcomes = r.pop('outcomes')
+            delta = {'new_fail':0,'fixes':0,'regressions':0}
+            if prev:
+                for tid,out in outcomes.items():
+                    po = prev['__outcomes'].get(tid)
+                    if po != 'failed' and out == 'failed':
+                        delta['new_fail'] += 1
+                    if po == 'failed' and out == 'passed':
+                        delta['fixes'] += 1
+                    if po == 'passed' and out == 'failed':
+                        delta['regressions'] += 1
+            entry = {k:v for k,v in r.items() if k != '__outcomes'}
+            entry.update(delta)
+            timeline.append(entry)
+            r['__outcomes'] = outcomes  # stash
+            prev = r
+        if args.limit > 0:
+            timeline = timeline[-args.limit:]
+        if args.json:
+            print(json.dumps(timeline, separators=(',',':')))
+            return 0
+        print(f"TIMELINE ({len(timeline)} snapshots)")
+        for t in timeline:
+            print(f"{t['created_at'] or '?'} {t['label']} commit={t['git_commit']} total={t['total']} fail={t['failed']} new_fail={t['new_fail']} fixes={t['fixes']} regressions={t['regressions']}")
         return 0
 
 
