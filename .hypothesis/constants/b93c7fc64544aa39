@@ -1,4 +1,0 @@
-# file: /Users/cyrilrikh/Documents/GitHub/pytest-html-baseline/src/pytest_html_baseline/diff.py
-# hypothesis_version: 6.138.14
-
-[0.0, 'curr', 'duration', 'failed', 'flaky_suspects', 'from', 'id', 'n_flaky', 'n_new', 'n_slower', 'n_vanished', 'new_failures', 'outcome', 'passed', 'prev', 'ratio', 'slower_tests', 'summary', 'tests', 'to', 'vanished_failures', 'xfail', 'xfailed', 'xpass', 'xpassed']

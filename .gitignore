@@ -1,0 +1,24 @@
+# Bytecode / caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Build / dist artifacts
+build/
+dist/
+*.egg-info/
+
+# Local snapshots / artifacts
+.snap/
+.artifacts/
+
+# OS cruft
+.DS_Store
+
+# Coverage / test artifacts (future)
+.coverage
+htmlcov/

@@ -1,0 +1,4 @@
+# Runtime requirements for pytest-snap (convenience file)
+# Primary packaging is managed via pyproject.toml
+
+pytest>=8.0

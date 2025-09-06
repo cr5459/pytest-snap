@@ -1,0 +1,4 @@
+# Dev/build requirements
+-r requirements.txt
+build
+twine

@@ -8,4 +8,5 @@ which is deprecated in non-top-level conftest files (Pytest 8 deprecation).
 If tests require the `pytester` plugin, uncomment the line below.
 """
 
+# Enable pytester fixture for internal tests only (not installed runtime).
 pytest_plugins = ["pytester"]

@@ -1,5 +1,0 @@
-[console_scripts]
-pytest-snap = pytest_snap.cli:main
-
-[pytest11]
-snap = pytest_snap.plugin

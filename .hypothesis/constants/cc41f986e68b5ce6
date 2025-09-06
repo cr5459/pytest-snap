@@ -1,4 +1,0 @@
-# file: /Users/cyrilrikh/Documents/GitHub/pytest-html-baseline/src/pytest_html_baseline/plugin.py
-# hypothesis_version: 6.138.14
-
-[0.0, 0.15, 0.2, 1.3, ',', ', ', '-', '--html-baseline', '--html-budgets', '--html-diff-json', '--html-fail-on', '--html-min-count', '--html-save-baseline', ':', '?', '_html_baseline_cfg', 'any', 'budgets', 'call', 'collected', 'created_at', 'duration', 'failed', 'history.jsonl', 'html-baseline', 'html_baseline', 'html_baseline_badges', 'html_budgets', 'html_diff_json', 'html_fail_on', 'html_flake_threshold', 'html_history_path', 'html_min_count', 'html_save_baseline', 'id', 'n_budget', 'n_flaky', 'n_new', 'n_slower', 'new-failures', 'normalization_mode', 'off', 'slower', 'store', 'store_true', 'summary', 'tests', 'testscollected', 'utf-8', 'version', 'w']

@@ -1,4 +1,0 @@
-# file: /Users/cyrilrikh/Documents/GitHub/pytest-html-baseline/src/pytest_html_baseline/baseline.py
-# hypothesis_version: 6.138.14
-
-[0.0, 0.3, '%Y-%m-%dT%H:%M:%SZ', ',', ':', '__/tests/', 'a', 'collected', 'created_at', 'duration', 'failed', 'id', 'none', 'off', 'outcome', 'passed', 'r', 'run_id', 'sig', 'strip_version_dir', 'tests', 'ts', 'utf-8', 'version', 'w']

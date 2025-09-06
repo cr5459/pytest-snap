@@ -1,4 +1,0 @@
-# file: /Users/cyrilrikh/Documents/GitHub/pytest-html-baseline/src/pytest_html_baseline/render.py
-# hypothesis_version: 6.138.14
-
-['#222', '#2d8', '#d33', '#e67e22', '#fd3', '#fff', 'Baseline Compare', 'FIXED', 'FLAKY?', 'Flaky Suspects', 'NEW', 'New Failures', 'SLOWER', 'Slower Tests', 'Vanished Failures', '_html_baseline_diff', 'baseline-compare', 'config', 'curr', 'flaky_suspects', 'from', 'id', 'new_failures', 'nodeid', 'prev', 'ratio', 'slower_tests', 'summary', 'to', 'vanished_failures']

@@ -1,13 +1,18 @@
 # pytest-snap
 
-A lightweight way to record the results of a test run (a snapshot) and later compare new runs against that baseline. It highlights regressions (new failures), fixes, removed tests, performance slow‑downs, flaky behavior, and optional performance budget breaches.
+Minimal deterministic snapshot capture of a pytest run: per-test outcome +
+duration (ns) stored in a JSON file. Intended as a small foundation for
+optional future diff / perf / gating features.
 
-The project provides:
+Current 0.1.0 scope:
+* Pytest plugin auto‑loaded (entry point `snap`).
+* `--snap` flag enables capture.
+* `--snap-out PATH` chooses output file (default `.snap/current.json`).
+* CLI wrapper for repeated labeled runs (`pytest-snap run`, `pytest-snap all`).
 
-1. A pytest plugin (auto‑loaded once installed).  
-2. A helper CLI (`pytest-snap`) for labeled runs and offline diffs.
-
-Use either one or both— they are complementary but independent.
+Out of scope (planned, not implemented yet in the plugin runtime): budgets,
+flake scoring, inline performance gating, historical diffing inside the test
+session. The README will grow with those features post‑0.1.0.
 
 ---
 
@@ -18,73 +23,129 @@ pip install pytest-snap
 ```
 ---
 
-## Helper CLI (`pytest-snap`)
+## Quick Start
 
-Labeled runs make comparisons simple (e.g. `v1`, `v2`).
+Install:
 
 ```bash
-# Run default sequence (v1 v2 v3)
-pytest-snap all
+pip install pytest-snap
+```
 
-# Or run individual labels
+Run tests with snapshot capture:
+
+```bash
+pytest --snap
+```
+
+Result written to `.snap/current.json` (create the directory if needed). Change
+destination:
+
+```bash
+pytest --snap --snap-out my_run.json
+```
+
+Use the helper CLI for labeled runs (writes `.artifacts/snap_<label>.json`):
+
+```bash
 pytest-snap run v1
 pytest-snap run v2
-
-# Compare two snapshots (v1 -> v2) with performance analysis
-pytest-snap diff v1 v2 --perf
-
-# Show a single snapshot summary
-pytest-snap show v2
-
-# Remove generated artifacts
-pytest-snap clean
 ```
 
-Snapshots live in `.artifacts/` as `snap_<label>.json`. Add `--html` to `run`/`all` to also emit a pytest-html report (if `pytest-html` is installed). The CLI is unchanged by the flag rename. More on the --perf flag in advanced features section.
+Generate several labels in sequence:
 
----
-
-## Tracked Change Categories
-
-| Category | Description |
-|----------|-------------|
-| New failures | Tests that now fail but did not previously |
-| Fixed failures | Tests that failed before and now pass |
-| Vanished failures | Former failing tests that are now gone or fixed |
-| Slower tests | Same test now significantly slower |
-| Flaky suspects | Tests whose outcome flips between runs |
-| New / resolved / persistent xfails | Expected-failure state transitions |
-| XPASS | Tests marked xfail that unexpectedly passed |
-| Budget violations | Defined performance budget exceeded |
-
----
-## Advanced Features
-
-The following sections dive into optional and more advanced capabilities: performance budgets and gating, performance diff analysis, flaky detection heuristics, and baseline workflow refinements. Skip ahead only if you need tighter CI controls or deeper performance insight.
-
-## Performance Budgets
-
-Define timing expectations for groups of tests using a YAML file. Example `budgets.yaml`:
-
-```yaml
-groups:
-  core:
-	 match: "tests/"   # substring match in test id
-	 p95: 0.50         # 95th percentile < 0.50s
-  slow_group:
-	 match: "tests/slow_"
-	 max_avg: 1.2      # mean duration < 1.2s
-```
-
-Use it:
 ```bash
-pytest --snap-baseline .artifacts/snap_base.json \
-	--snap-budgets budgets.yaml \
-	--snap-fail-on budgets
+pytest-snap all               # default labels v1 v2 v3
 ```
-Legacy form (still accepted): `--html-baseline ... --html-budgets ... --html-fail-on budgets`.
+
+### Using a custom tests folder
+
+By default, the CLI runs your repo's `./tests` directory if it exists. To target a different folder, file, or a single test (node id), pass `--tests`:
+
+```bash
+# A specific directory
+pytest-snap run v1 --tests ./path/to/tests
+
+# A subfolder of your test tree
+pytest-snap run v1 --tests tests/integration
+
+# A single file or a single test node
+pytest-snap run v1 --tests tests/test_api.py
+pytest-snap run v1 --tests tests/test_api.py::test_happy_path
+
+# Add regular pytest filters (forwarded as-is)
+pytest-snap run v1 --tests tests/integration -k "smoke" -m "not flaky"
+```
+
+Prefer using plain pytest? The plugin doesn't change discovery; just supply paths as usual and add the flags:
+
+```bash
+pytest --snap --snap-out .artifacts/snap.json ./path/to/tests
+# If plugin autoload is disabled:
+pytest -p pytest_snap.plugin --snap --snap-out .artifacts/snap.json ./path/to/tests
+```
+
+### Artifacts and outputs
+
+Where results are written by default and how to change it:
+
+- Pure pytest (plugin)
+	- Default file: `.snap/current.json`
+	- Override with `--snap-out PATH`.
+	- Example:
+		```bash
+		pytest --snap --snap-out .artifacts/snap_v1.json tests/
+		```
+
+- CLI (pytest-snap)
+	- Default directory: `.artifacts`
+	- Files created per run:
+		- `.artifacts/snap_<label>.json` (always)
+		- `.artifacts/run_<label>.html` (only with `--html` and pytest-html installed)
+	- Change directory with `--artifacts DIR`.
+	- Examples:
+		```bash
+		# Default outputs
+		pytest-snap run v1
+
+		# Custom output directory
+		pytest-snap run v1 --artifacts out/snapshots
+
+		# Diff reads from the same directory
+		pytest-snap diff v1 v2 --artifacts out/snapshots
+		```
+
+- Housekeeping helpers
+	```bash
+	pytest-snap list                # list available snapshots
+	pytest-snap show v1            # show summary for a snapshot
+	pytest-snap clean              # remove the artifacts directory
+	# (all accept --artifacts DIR)
+	```
 
 ---
+
+## Snapshot Schema (v0.1.0)
+
+```json
+{
+	"started_ns": 1234567890,
+	"finished_ns": 1234569999,
+	"env": {"pytest_version": "8.x"},
+	"results": [
+		{"nodeid": "tests/test_example.py::test_ok", "outcome": "passed", "dur_ns": 10423}
+	]
+}
+```
+
+## Future Roadmap (High Level)
+Planned incremental additions (subject to change):
+1. Baseline diff & change bucket summarization.
+2. Slower test detection & perf thresholds.
+3. Budget YAML support and gating.
+4. Historical flake scoring.
+5. Rich diff / timeline CLI views.
+
+Early adopters should pin minor versions if depending on emerging fields.
 
 ### Code-level Diff (`--code`)
 
@@ -237,6 +298,23 @@ Use cases:
 * Send the timeline JSON straight to a small dashboard (Prometheus push, simple web chart) without re-reading all snapshot files.
 * In Continuous Integration (CI) pipelines, fail the run (block the merge) if the timeline shows new failures or regressions. CI = automated test/build system that runs on every change.
 
+### Labels vs paths (what does `v1` mean?)
+
+- `pytest-snap run <label>`
+	- The label only names the output file: `.artifacts/snap_<label>.json`.
+	- It does not select a folder named `<label>`; discovery defaults to `./tests` unless you pass `--tests`.
+	- Examples:
+		```bash
+		pytest-snap run v1                      # runs ./tests, writes .artifacts/snap_v1.json
+		pytest-snap run mylabel --tests tests/api
+		pytest-snap run pr-123  --tests tests/test_api.py::test_happy_path
+		```
+
+- `pytest-snap diff <A> <B>`
+	- Labels refer to snapshot files in the artifacts directory (default `.artifacts`).
+	- When you add `--code` (or `--code-only`), directories named `<A>` and `<B>` are looked up under `--versions-base` (default `.`). If not found there, the tool falls back to `example_suite/<label>` only if both directories exist.
+	- You can control the base with `--versions-base PATH`.
+
 ---
 
 ## Flaky Detection
@@ -246,25 +324,19 @@ When history logging is enabled (default in `pytest-snap run`), previous outcome
 ---
 
 ## Conceptual Model
-
-1. Capture a baseline snapshot.  
-2. Compare new runs to that baseline.  
-3. Choose gating rules.  
-4. Refresh the baseline when the current state is the new normal.  
+1. Enable capture (flag / CLI) → write snapshot.
+2. (Future) Compare snapshots → categorize changes.
+3. (Future) Apply gating policies.
+4. Refresh baseline as intent changes.
 
 ---
 
 ## FAQ
+**Do I need the CLI?** No; it's convenience sugar for labeled runs.
 
-**Do I need the CLI?** No. The plugin alone works; the CLI adds convenience for labeled runs and offline diffs.
+**Why not a baseline diff yet?** Keeping 0.1.0 deliberately small; diffing lands next.
 
-**When do I refresh the baseline?** After intentional changes when remaining differences are acceptable.
-
-**What about flaky tests?** Fix them ideally; meanwhile history-based filtering reduces false alarms.
-
-**Is this a snapshot testing library for function outputs?** No. It snapshots test outcomes and timings.
-
-**Does it speed up tests?** No—it surfaces regressions sooner.
+**Will the schema change?** Potentially (still pre-1.0.0) but additions will prefer backward compatibility.
 
 
 ```
@@ -272,14 +344,11 @@ When history logging is enabled (default in `pytest-snap run`), previous outcome
 ---
 
 ## Glossary
-
 | Term | Definition |
 |------|------------|
 | Snapshot | JSON record of one full test run |
-| Baseline | The snapshot future runs are compared against |
-| Diff | Structured comparison of baseline vs current run |
-| Flaky test | Test with unstable pass/fail result across runs |
-| Budget | Performance rule (e.g. max average or p95) |
+| Nodeid | Pytest's canonical test identifier |
+| Duration | Test call-phase elapsed time (ns stored) |
 
 ---
 
