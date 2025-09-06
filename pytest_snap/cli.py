@@ -321,13 +321,6 @@ def run_tests(label: str, *, tests_dir: Path, artifacts: Path, html: bool, histo
 		'--snap',
 		'--snap-out', str(snap),
 	]
-	# If using example suite directories, override root pytest.ini (which pins testpaths=tests)
-	if 'example_suite' in str(tests_dir):
-		empty_cfg = artifacts / 'pytest_empty.ini'
-		if not empty_cfg.exists():
-			empty_cfg.write_text('[pytest]\n', encoding='utf-8')
-		cmd.insert(cmd.index('-m') + 2, '-c')  # insert after '-m', 'pytest'
-		cmd.insert(cmd.index('-c') + 1, str(empty_cfg))
 	# Forward extra pytest args as-is
 	extra_clean = list(extra_pytest)
 	if html:
@@ -350,11 +343,9 @@ def run_tests(label: str, *, tests_dir: Path, artifacts: Path, html: bool, histo
 def discover_tests_dir(explicit: str | None) -> Path:
 	if explicit:
 		return Path(explicit)
-	# Default priority now prefers root tests; example suite handled via --example-suite flag elsewhere
+	# Default priority prefers root tests; no special-case example suite handling
 	if Path('tests').is_dir():
 		return Path('tests')
-	if Path('example_suite/tests').is_dir():
-		return Path('example_suite/tests')
 	return Path('.')
 
 
@@ -381,14 +372,14 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 	ap_run = sub.add_parser('run', help='Run tests and write labeled snapshot (.artifacts/snap_<label>.json)')
 	ap_run.add_argument('label', help='Arbitrary label; names the output snapshot file (e.g., snap_<label>.json)')
-	ap_run.add_argument('--tests', help='Tests directory/file/node to run (default: ./tests if present, else auto)')
+	ap_run.add_argument('--tests', help='Tests directory/file/node to run (default: ./tests if present, else .)')
 	ap_run.add_argument('--artifacts', default='.artifacts', help='Artifacts directory (default: .artifacts); writes snap_<label>.json')
 	ap_run.add_argument('--html', action='store_true', help='Generate pytest-html report (opt-in)')
 	ap_run.add_argument('--no-history', action='store_true', help='Disable flake history recording')
 
 	ap_all = sub.add_parser('all', help='Run multiple labels sequentially (default: v1 v2 v3)')
 	ap_all.add_argument('labels', nargs='*')
-	ap_all.add_argument('--tests', help='Tests directory/file/node to run for each label (default: ./tests if present, else auto)')
+	ap_all.add_argument('--tests', help='Tests directory/file/node to run for each label (default: ./tests if present, else .)')
 	ap_all.add_argument('--artifacts', default='.artifacts', help='Artifacts directory (default: .artifacts)')
 	ap_all.add_argument('--html', action='store_true', help='Generate pytest-html reports for each run')
 	ap_all.add_argument('--no-history', action='store_true')
@@ -476,12 +467,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 		if do_code:
 			base = Path(args.versions_base)
 			old_dir = base / args.a; new_dir = base / args.b
-			if not (old_dir.is_dir() and new_dir.is_dir()):
-				# fallback attempt to example_suite/<label> dirs if present
-				alt_base = Path('example_suite')
-				alt_old, alt_new = alt_base / args.a, alt_base / args.b
-				if alt_old.is_dir() and alt_new.is_dir():
-					base = alt_base; old_dir, new_dir = alt_old, alt_new
 			if old_dir.is_dir() and new_dir.is_dir():
 				print("\n== CODE DIFF ==")
 				print(f"(using versions base: {base})")

@@ -164,7 +164,7 @@ pytest-snap diff v1 v2 --code
 ```
 
 What happens:
-* Auto-detects version directories in the current working directory (or under `example_suite/` fallback).
+* Auto-detects version directories `<A>` and `<B>` under the current working directory (or under `--versions-base` if provided).
 * Lists added / removed / modified test functions (`def test_*`).
 * Shows a unified diff (syntax-colored) for modified tests with simple performance hints (range() growth, added sleep time).
 
@@ -312,7 +312,7 @@ Use cases:
 
 - `pytest-snap diff <A> <B>`
 	- Labels refer to snapshot files in the artifacts directory (default `.artifacts`).
-	- When you add `--code` (or `--code-only`), directories named `<A>` and `<B>` are looked up under `--versions-base` (default `.`). If not found there, the tool falls back to `example_suite/<label>` only if both directories exist.
+	- When you add `--code` (or `--code-only`), directories named `<A>` and `<B>` are looked up under `--versions-base` (default `.`).
 	- You can control the base with `--versions-base PATH`.
 
 ---
