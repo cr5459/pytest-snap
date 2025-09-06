@@ -340,9 +340,6 @@ When history logging is enabled (default in `pytest-snap run`), previous outcome
 
 **Will the schema change?** Potentially (still pre-1.0.0) but additions will prefer backward compatibility.
 
-
-```
-
 ---
 
 ## Glossary
