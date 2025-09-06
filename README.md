@@ -19,7 +19,7 @@ session. The README will grow with those features post‑0.1.0.
 ## Installation
 
 ```bash
-pip install pytest-snap
+pip install pytest-snapcheck
 ```
 ---
 
@@ -28,7 +28,7 @@ pip install pytest-snap
 Install:
 
 ```bash
-pip install pytest-snap
+pip install pytest-snapcheck
 ```
 
 Run tests with snapshot capture:
@@ -49,6 +49,8 @@ Use the helper CLI for labeled runs (writes `.artifacts/snap_<label>.json`):
 ```bash
 pytest-snap run v1
 pytest-snap run v2
+# or
+pytest-snapcheck run v1
 ```
 
 Generate several labels in sequence:

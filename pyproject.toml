@@ -3,8 +3,8 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pytest-snap"
-version = "0.1.1"
+name = "pytest-snapcheck"
+version = "0.1.2"
 description = "Minimal deterministic test-run snapshot capture for pytest."
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.9"
@@ -33,6 +33,7 @@ snap = "pytest_snap.plugin"
 [project.scripts]
 # Expose the CLI main entry point (previously pointed at non-existent 'app')
 pytest-snap = "pytest_snap.cli:main"
+pytest-snapcheck = "pytest_snap.cli:main"
 
 [tool.setuptools]
 
