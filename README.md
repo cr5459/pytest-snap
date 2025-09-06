@@ -10,11 +10,7 @@ Current 0.1.0 scope:
 * `--snap-out PATH` chooses output file (default `.snap/current.json`).
 * CLI wrapper for repeated labeled runs (`pytest-snap run`, `pytest-snap all`).
 
-Out of scope (planned, not implemented yet in the plugin runtime): budgets,
-flake scoring, inline performance gating, historical diffing inside the test
-session. The README will grow with those features post‑0.1.0.
-
----
+PyPi: https://pypi.org/project/pytest-snapcheck/#description
 
 ## Installation
 
