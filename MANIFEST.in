@@ -1,6 +1,4 @@
 include README.md CHANGELOG.md LICENSE
-recursive-include pytest_snap *.py
 include pytest_snap/py.typed
 prune bench
-prune example_suite
 prune tests

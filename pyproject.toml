@@ -42,3 +42,6 @@ where = ["."]
 include = ["pytest_snap*"]
 exclude = ["bench", "example_suite", "tests"]
 
+[tool.setuptools.package-data]
+pytest_snap = ["py.typed"]
+
