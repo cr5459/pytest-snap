@@ -4,7 +4,7 @@ Minimal deterministic snapshot capture of a pytest run: per-test outcome +
 duration (ns) stored in a JSON file. Intended as a small foundation for
 optional future diff / perf / gating features.
 
-Current 0.1.0 scope:
+Current scope:
 * Pytest plugin auto‑loaded (entry point `snap`).
 * `--snap` flag enables capture.
 * `--snap-out PATH` chooses output file (default `.snap/current.json`).
@@ -361,9 +361,9 @@ When history logging is enabled (default in `pytest-snap run`), previous outcome
 
 MIT (see `LICENSE`).
 
----
-
-Happy hacking.
-
----
+## Compatibility
+Runs on
+* Operating systems: macOS, Linux, and Windows (pure Python, no native extensions).
+* Python versions: 3.9+ (tox/CI test 3.9–3.12; builds also succeed on 3.13).
+* Requirements: pytest>=8.0.
 
