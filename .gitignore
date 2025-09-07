@@ -22,3 +22,4 @@ dist/
 # Coverage / test artifacts (future)
 .coverage
 htmlcov/
+.hypothesis/
