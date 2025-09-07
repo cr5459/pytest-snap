@@ -1,4 +1,0 @@
-# file: /Users/cyrilrikh/Documents/GitHub/pytest-snap/src/pytest_snap/plugin.py
-# hypothesis_version: 6.138.14
-
-[1000000000.0, '--snap', '--snap-baseline', '--snap-fail-on', '--snap-out', '.', '.snap/current.json', '_snap_initialized', '_snap_results', '_snap_started_ns', 'call', 'env', 'finished_ns', 'markers', 'pytest_addoption', 'pytest_version', 'results', 'snap', 'started_ns', 'store', 'store_true', 'utf-8', 'w']

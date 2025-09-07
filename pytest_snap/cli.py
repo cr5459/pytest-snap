@@ -385,7 +385,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 	ap_all.add_argument('--no-history', action='store_true')
 
 	ap_diff = sub.add_parser('diff', help='Diff two labeled snapshots (A -> B). Labels map to .artifacts/snap_<label>.json')
-	ap_perf = sub.add_parser('perf', help='Show performance diff usage (shortcut docs for diff --perf)')
+	sub.add_parser('perf', help='Show performance diff usage (shortcut docs for diff --perf)')
 	ap_timeline = sub.add_parser('timeline', help='Show chronological snapshot summary (optionally since a commit)')
 	ap_timeline.add_argument('--artifacts', default='.artifacts')
 	ap_timeline.add_argument('--since', help='Git commit hash (short) to start from')

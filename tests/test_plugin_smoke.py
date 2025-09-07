@@ -12,10 +12,8 @@ def test_snapshot_creation(pytester, tmp_path: Path):
     )
 
     out = tmp_path / "snap.json"
-    # Run pytest with our plugin explicitly loaded
+    # Run pytest; plugin autoloads via pytest11 entry point
     result = pytester.runpytest(
-        "-p",
-        "pytest_snap.plugin",
         "--snap",
         "--snap-out",
         str(out),
