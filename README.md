@@ -4,17 +4,13 @@ Minimal deterministic snapshot capture of a pytest run: per-test outcome +
 duration (ns) stored in a JSON file. Intended as a small foundation for
 optional future diff / perf / gating features.
 
-Current 0.1.0 scope:
+Current scope:
 * Pytest plugin auto‑loaded (entry point `snap`).
 * `--snap` flag enables capture.
 * `--snap-out PATH` chooses output file (default `.snap/current.json`).
 * CLI wrapper for repeated labeled runs (`pytest-snap run`, `pytest-snap all`).
 
-Out of scope (planned, not implemented yet in the plugin runtime): budgets,
-flake scoring, inline performance gating, historical diffing inside the test
-session. The README will grow with those features post‑0.1.0.
-
----
+PyPi: https://pypi.org/project/pytest-snapcheck/#description
 
 ## Installation
 
@@ -365,9 +361,9 @@ When history logging is enabled (default in `pytest-snap run`), previous outcome
 
 MIT (see `LICENSE`).
 
----
-
-Happy hacking.
-
----
+## Compatibility
+Runs on
+* Operating systems: macOS, Linux, and Windows (pure Python, no native extensions).
+* Python versions: 3.9+ (tox/CI test 3.9–3.12; builds also succeed on 3.13).
+* Requirements: pytest>=8.0.
 
